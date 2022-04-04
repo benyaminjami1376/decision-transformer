@@ -66,6 +66,7 @@ def experiment(
     act_dim = env.action_space.shape[0]
 
     # load dataset
+    datas_address = '/content/drive/MyDrive/UW' if variant['colab'] else 'data'
     dataset_path = f'data/{env_name}-{dataset}-v2.pkl'
     with open(dataset_path, 'rb') as f:
         trajectories = pickle.load(f)
@@ -302,6 +303,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_steps_per_iter', type=int, default=1000)
     parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu')
     parser.add_argument('--log_to_wandb', '-w', type=bool, default=True)
+    parser.add_argument('--colab', '-C', type=bool, default=False)
     
     args = parser.parse_args()
 
