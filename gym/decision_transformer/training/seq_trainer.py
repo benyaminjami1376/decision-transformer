@@ -13,7 +13,7 @@ class SequenceTrainer(Trainer):
         reward_target = torch.clone(rewards)
 
         state_preds, action_preds, reward_preds = self.model.forward(
-            states, actions, rewards, rtg[:,:-1], timesteps, attention_mask=attention_mask,
+            states, actions, rewards, rtg[:, :-1], timesteps, attention_mask=attention_mask,
         )
 
         act_dim = action_preds.shape[2]
@@ -23,14 +23,16 @@ class SequenceTrainer(Trainer):
         state_dim = state_preds.shape[2]
         state_preds = state_preds.reshape(-1, state_dim)[attention_mask.reshape(-1) > 0]
         state_target = state_target.reshape(-1, state_dim)[attention_mask.reshape(-1) > 0]
+        state_target, state_preds = state_target[1:], state_preds[:-1]
 
         reward_dim = reward_preds.shape[2]
         reward_preds = reward_preds.reshape(-1, reward_dim)[attention_mask.reshape(-1) > 0]
         reward_target = reward_target.reshape(-1, reward_dim)[attention_mask.reshape(-1) > 0]
+        reward_target, reward_preds = reward_target[1:], reward_preds[:-1]
 
         loss = self.loss_fn(
-            state_preds, action_preds, reward_preds,
-            state_target, action_target, reward_target,
+            state_preds[5:], action_preds[5:], reward_preds[5:],
+            state_target[5:], action_target[5:], reward_target[5:],
         )
 
         self.optimizer.zero_grad()
@@ -39,6 +41,7 @@ class SequenceTrainer(Trainer):
         self.optimizer.step()
 
         with torch.no_grad():
-            self.diagnostics['training/action_error'] = torch.mean((action_preds-action_target)**2).detach().cpu().item()
+            self.diagnostics['training/action_error'] = torch.mean(
+                (action_preds - action_target) ** 2).detach().cpu().item()
 
         return loss.detach().cpu().item()
