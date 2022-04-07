@@ -248,7 +248,7 @@ def experiment(
     )
 
     def loss_fn(s_hat, a_hat, r_hat, s, a, r):
-        ys, yr = 0, 0
+        ys, yr = 1, 0
         loss_a = torch.mean((a_hat - a) ** 2)
         loss_s = torch.mean((s_hat - s) ** 2)
         loss_r = torch.mean((r_hat - r) ** 2)
