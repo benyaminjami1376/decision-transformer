@@ -11,6 +11,7 @@ class SequenceTrainer(Trainer):
         action_target = torch.clone(actions)
         state_target = torch.clone(states)
         reward_target = torch.clone(rewards)
+        rtg_target = torch.clone(rtg[:, :-1])
 
         state_preds, action_preds, reward_preds = self.model.forward(
             states, actions, rewards, rtg[:, :-1], timesteps, attention_mask=attention_mask,
@@ -26,13 +27,14 @@ class SequenceTrainer(Trainer):
         # state_target, state_preds = state_target[1:], state_preds[:-1]
 
         reward_dim = reward_preds.shape[2]
-        reward_preds = reward_preds.reshape(-1, reward_dim)[attention_mask.reshape(-1) > 0]
-        reward_target = reward_target.reshape(-1, reward_dim)[attention_mask.reshape(-1) > 0]
-        reward_target, reward_preds = reward_target[1:], reward_preds[:-1]
+        reward_preds = reward_preds[:, :-1].reshape(-1, reward_dim)[attention_mask[:, 1:].reshape(-1) > 0]
+        reward_target = reward_target[:, 1:].reshape(-1, reward_dim)[attention_mask[:, 1:].reshape(-1) > 0]
+        rtg_target = rtg_target[:, 1:].reshape(-1, reward_dim)[attention_mask[:, 1:].reshape(-1) > 0]
+        # reward_target, reward_preds = reward_target[1:], reward_preds[:-1]
 
         loss = self.loss_fn(
             state_preds[:], action_preds[:], reward_preds[:],
-            state_target[:], action_target[:], reward_target[:],
+            state_target[:], action_target[:], reward_target[:], rtg_target[:]
         )
 
         self.optimizer.zero_grad()

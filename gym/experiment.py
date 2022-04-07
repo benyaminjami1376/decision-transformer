@@ -247,12 +247,14 @@ def experiment(
         lambda steps: min((steps+1)/warmup_steps, 1)
     )
 
-    def loss_fn(s_hat, a_hat, r_hat, s, a, r):
-        ys, yr = 1, 0
+    def loss_fn(s_hat, a_hat, r_hat, s, a, r, rtg):
+        ys, yr, yrtg = 1, 0, 0
         loss_a = torch.mean((a_hat - a) ** 2)
         loss_s = torch.mean((s_hat - s) ** 2)
         loss_r = torch.mean((r_hat - r) ** 2)
-        return loss_a + ys * loss_s + yr * loss_r
+        loss_rtg = torch.mean((r_hat - rtg) ** 2)
+
+        return loss_a + ys * loss_s + yr * loss_r + yrtg * loss_rtg
 
     if model_type == 'dt':
         trainer = SequenceTrainer(
