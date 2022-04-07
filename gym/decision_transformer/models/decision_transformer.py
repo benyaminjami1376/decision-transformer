@@ -44,7 +44,9 @@ class DecisionTransformer(TrajectoryModel):
         self.embed_ln = nn.LayerNorm(hidden_size)
 
         # note: we don't predict states or returns for the paper
-        self.predict_state = torch.nn.Linear(hidden_size, self.state_dim)
+        self.predict_state = nn.Sequential(
+            *([nn.Linear(2*hidden_size, 256), nn.GELU(), nn.Linear(256, state_dim)])
+        )
         self.predict_action = nn.Sequential(
             *([nn.Linear(hidden_size, self.act_dim)] + ([nn.Tanh()] if action_tanh else []))
         )
@@ -94,7 +96,7 @@ class DecisionTransformer(TrajectoryModel):
 
         # get predictions
         action_preds = self.predict_action(x[:, 1])  # predict next action given state
-        state_preds = self.predict_state(x[:, 2])  # predict next state given state and action
+        state_preds = self.predict_state(x[:, 1:])  # predict next state given state and action
         return_preds = self.predict_return(x[:, 2])  # predict next return given state and action
 
         return state_preds, action_preds, return_preds
