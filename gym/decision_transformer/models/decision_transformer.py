@@ -74,9 +74,9 @@ class DecisionTransformer(TrajectoryModel):
 
         # time embeddings are treated similar to positional embeddings
         if self.type_embed:
-            state_embeddings = state_embeddings + time_embeddings + self.embed_token_type(torch.tensor([0]).to(dtype=torch.float32, device=self.device))
-            action_embeddings = action_embeddings + time_embeddings + self.embed_token_type(torch.tensor([1]).to(dtype=torch.float32, device=self.device))
-            returns_embeddings = returns_embeddings + time_embeddings + self.embed_token_type(torch.tensor([2]).to(dtype=torch.float32, device=self.device))
+            state_embeddings = state_embeddings + time_embeddings + self.embed_token_type(torch.tensor([0]).to(device=self.device))
+            action_embeddings = action_embeddings + time_embeddings + self.embed_token_type(torch.tensor([1]).to(device=self.device))
+            returns_embeddings = returns_embeddings + time_embeddings + self.embed_token_type(torch.tensor([2]).to(device=self.device))
         else:
             state_embeddings = state_embeddings + time_embeddings
             action_embeddings = action_embeddings + time_embeddings
