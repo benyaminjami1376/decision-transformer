@@ -249,7 +249,7 @@ def experiment(
     )
 
     def loss_fn(s_hat, a_hat, r_hat, s, a, r, rtg):
-        ys, yr, yrtg = 1, 0, 0
+        ys, yr, yrtg = variant['ls'], variant['lr'], variant['lg']
         loss_a = torch.mean((a_hat - a) ** 2)
         loss_s = torch.mean((s_hat - s) ** 2)
         loss_r = torch.mean((r_hat - r) ** 2)
@@ -314,9 +314,13 @@ if __name__ == '__main__':
     parser.add_argument('--max_iters', type=int, default=10)
     parser.add_argument('--num_steps_per_iter', type=int, default=1000)
     parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu')
-    parser.add_argument('--log_to_wandb', '-w', type=bool, default=True)
+    parser.add_argument('--log_to_wandb', '-w', type=bool, default=False)
     parser.add_argument('--colab', '-C', type=bool, default=False)
     parser.add_argument('--type', '-T', type=bool, default=False)
+    parser.add_argument('--ls', type=float, default=1)
+    parser.add_argument('--lr', type=float, default=0)
+    parser.add_argument('--lg', type=float, default=0)
+
     args = parser.parse_args()
 
     experiment('gym-experiment', variant=vars(args))
