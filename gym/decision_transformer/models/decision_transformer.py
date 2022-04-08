@@ -21,6 +21,7 @@ class DecisionTransformer(TrajectoryModel):
             max_length=None,
             max_ep_len=4096,
             action_tanh=True,
+            type_embed=False,
             **kwargs
     ):
         super().__init__(state_dim, act_dim, max_length=max_length)
@@ -35,7 +36,9 @@ class DecisionTransformer(TrajectoryModel):
         # note: the only difference between this GPT2Model and the default Huggingface version
         # is that the positional embeddings are removed (since we'll add those ourselves)
         self.transformer = GPT2Model(config)
+        self.type_embed = type_embed
 
+        self.embed_token_type = nn.Embedding(3, hidden_size)
         self.embed_timestep = nn.Embedding(max_ep_len, hidden_size)
         self.embed_return = torch.nn.Linear(1, hidden_size)
         self.embed_state = torch.nn.Linear(self.state_dim, hidden_size)
@@ -45,13 +48,13 @@ class DecisionTransformer(TrajectoryModel):
 
         # note: we don't predict states or returns for the paper
         self.predict_state = nn.Sequential(
-            *([nn.Linear(2*hidden_size, 256), nn.GELU(), nn.Linear(256, state_dim)])
+            *([nn.Linear(2 * hidden_size, 256), nn.GELU(), nn.Linear(256, state_dim)])
         )
         self.predict_action = nn.Sequential(
             *([nn.Linear(hidden_size, self.act_dim)] + ([nn.Tanh()] if action_tanh else []))
         )
         self.predict_return = nn.Sequential(
-            *([nn.Linear(3*hidden_size, 256), nn.GELU(), nn.Linear(256, 1)])
+            *([nn.Linear(2 * hidden_size, 256), nn.GELU(), nn.Linear(256, 1)])
         )
 
     def forward(self, states, actions, rewards, returns_to_go, timesteps, attention_mask=None):
@@ -69,9 +72,14 @@ class DecisionTransformer(TrajectoryModel):
         time_embeddings = self.embed_timestep(timesteps)
 
         # time embeddings are treated similar to positional embeddings
-        state_embeddings = state_embeddings + time_embeddings
-        action_embeddings = action_embeddings + time_embeddings
-        returns_embeddings = returns_embeddings + time_embeddings
+        if self.type_embed:
+            state_embeddings = state_embeddings + time_embeddings + self.embed_token_type(torch.tensor([0]))
+            action_embeddings = action_embeddings + time_embeddings + self.embed_token_type(torch.tensor([1]))
+            returns_embeddings = returns_embeddings + time_embeddings + self.embed_token_type(torch.tensor([2]))
+        else:
+            state_embeddings = state_embeddings + time_embeddings
+            action_embeddings = action_embeddings + time_embeddings
+            returns_embeddings = returns_embeddings + time_embeddings
 
         # this makes the sequence look like (R_1, s_1, a_1, R_2, s_2, a_2, ...)
         # which works nice in an autoregressive sense since states predict actions
@@ -98,8 +106,10 @@ class DecisionTransformer(TrajectoryModel):
 
         # get predictions
         action_preds = self.predict_action(x[:, 1])  # predict next action given state
-        state_preds = self.predict_state(x[:, 1:].permute(0,2,1,3).reshape(batch_size, seq_length, -1))  # predict next state given state and action
-        return_preds = self.predict_return(x[:, :].permute(0,2,1,3).reshape(batch_size, seq_length, -1))  # predict next return given state and action
+        state_preds = self.predict_state(x[:, 1:].permute(0, 2, 1, 3).reshape(batch_size, seq_length,
+                                                                              -1))  # predict next state given state and action
+        return_preds = self.predict_return(x[:, 1:].permute(0, 2, 1, 3).reshape(batch_size, seq_length,
+                                                                                -1))  # predict next return given state and action
 
         return state_preds, action_preds, return_preds
 

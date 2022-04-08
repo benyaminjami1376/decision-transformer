@@ -214,6 +214,7 @@ def experiment(
             act_dim=act_dim,
             max_length=K,
             max_ep_len=max_ep_len,
+            type_embed=variant['type'],
             hidden_size=variant['embed_dim'],
             n_layer=variant['n_layer'],
             n_head=variant['n_head'],
@@ -315,7 +316,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, default='cuda' if torch.cuda.is_available() else 'cpu')
     parser.add_argument('--log_to_wandb', '-w', type=bool, default=True)
     parser.add_argument('--colab', '-C', type=bool, default=False)
-
+    parser.add_argument('--type', '-T', type=bool, default=False)
     args = parser.parse_args()
 
     experiment('gym-experiment', variant=vars(args))
