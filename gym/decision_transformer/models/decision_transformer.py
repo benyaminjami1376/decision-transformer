@@ -22,6 +22,7 @@ class DecisionTransformer(TrajectoryModel):
             max_ep_len=4096,
             action_tanh=True,
             type_embed=False,
+            device='cuda',
             **kwargs
     ):
         super().__init__(state_dim, act_dim, max_length=max_length)
@@ -37,7 +38,7 @@ class DecisionTransformer(TrajectoryModel):
         # is that the positional embeddings are removed (since we'll add those ourselves)
         self.transformer = GPT2Model(config)
         self.type_embed = type_embed
-
+        self.device = device
         self.embed_token_type = nn.Embedding(3, hidden_size)
         self.embed_timestep = nn.Embedding(max_ep_len, hidden_size)
         self.embed_return = torch.nn.Linear(1, hidden_size)
@@ -73,9 +74,9 @@ class DecisionTransformer(TrajectoryModel):
 
         # time embeddings are treated similar to positional embeddings
         if self.type_embed:
-            state_embeddings = state_embeddings + time_embeddings + self.embed_token_type(torch.tensor([0]))
-            action_embeddings = action_embeddings + time_embeddings + self.embed_token_type(torch.tensor([1]))
-            returns_embeddings = returns_embeddings + time_embeddings + self.embed_token_type(torch.tensor([2]))
+            state_embeddings = state_embeddings + time_embeddings + self.embed_token_type(torch.tensor([0]).to(dtype=torch.float32, device=self.device))
+            action_embeddings = action_embeddings + time_embeddings + self.embed_token_type(torch.tensor([1]).to(dtype=torch.float32, device=self.device))
+            returns_embeddings = returns_embeddings + time_embeddings + self.embed_token_type(torch.tensor([2]).to(dtype=torch.float32, device=self.device))
         else:
             state_embeddings = state_embeddings + time_embeddings
             action_embeddings = action_embeddings + time_embeddings
