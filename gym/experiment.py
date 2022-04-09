@@ -40,7 +40,7 @@ def experiment(
     if env_name == 'hopper':
         env = gym.make('Hopper-v3')
         max_ep_len = 1000
-        env_targets = [3600, 1800]  # evaluation conditioning targets
+        env_targets = [3600]  # evaluation conditioning targets
         scale = 1000.  # normalization for rewards/returns
     elif env_name == 'halfcheetah':
         env = gym.make('HalfCheetah-v3')
@@ -50,13 +50,13 @@ def experiment(
     elif env_name == 'walker2d':
         env = gym.make('Walker2d-v3')
         max_ep_len = 1000
-        env_targets = [5000, 2500]
+        env_targets = [5000]
         scale = 1000.
     elif env_name == 'reacher2d':
         from decision_transformer.envs.reacher_2d import Reacher2dEnv
         env = Reacher2dEnv()
         max_ep_len = 100
-        env_targets = [76, 40]
+        env_targets = [76]
         scale = 10.
     else:
         raise NotImplementedError
